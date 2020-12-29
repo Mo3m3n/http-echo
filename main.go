@@ -4,29 +4,32 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
 // DefaultPort is the default port to use if once is not specified by the SERVER_PORT environment variable
-const HTTPPort = "8888"
-const HTTPSPort = "8443"
+const HTTPPort = 8888
+const HTTPSPort = 8443
 
-func getServerPorts() (ports [2]string) {
-	ports[0] = os.Getenv("HTTP_PORT")
-	ports[1] = os.Getenv("HTTPS_PORT")
-	if ports[0] == "" {
-		ports[0] = HTTPPort
+func getParams() map[string]string {
+	params := make(map[string]string)
+	httpPtr := flag.Int("http", HTTPPort, "http port value")
+	httpsPtr := flag.Int("https", HTTPSPort, "https port value")
+	tlsAuthPtr := flag.Bool("tlsAuth", false, "bool value if set to true, client certificate is required")
+	flag.Parse()
+	params["http"] = strconv.Itoa(*httpPtr)
+	params["https"] = strconv.Itoa(*httpsPtr)
+	if *tlsAuthPtr {
+		params["tlsAuth"] = ""
 	}
-	if ports[1] == "" {
-		ports[1] = HTTPSPort
-	}
-
-	return ports
+	return params
 }
 
 // EchoHandler echos back the request as a response
@@ -51,9 +54,14 @@ func EchoHandler(writer http.ResponseWriter, request *http.Request) {
 	}
 	// TLS
 	if request.TLS != nil {
+		certs := ""
+		for _, cert := range request.TLS.PeerCertificates {
+			certs += cert.Subject.CommonName + ","
+		}
 		attr["tls"] = map[string]string{
-			"sni":    request.TLS.ServerName,
-			"cipher": tls.CipherSuiteName(request.TLS.CipherSuite),
+			"sni":         request.TLS.ServerName,
+			"cipher":      tls.CipherSuiteName(request.TLS.CipherSuite),
+			"clientCerts": certs,
 		}
 	}
 	// HTTP
@@ -84,12 +92,12 @@ func EchoHandler(writer http.ResponseWriter, request *http.Request) {
 
 func main() {
 
+	params := getParams()
 	http.HandleFunc("/", EchoHandler)
-	ports := getServerPorts()
-	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", ports[0], ports[1])
+	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", params["http"], params["https"])
 	// HTTP
 	go func() {
-		err := http.ListenAndServe(":"+ports[0], nil)
+		err := http.ListenAndServe(":"+params["http"], nil)
 		if err != nil {
 			log.Fatal("Echo server (HTTP): ", err)
 		}
@@ -108,7 +116,16 @@ func main() {
 	if os.IsNotExist(err) {
 		log.Fatal("server.key: ", err)
 	}
-	err = http.ListenAndServeTLS(":"+ports[1], "server.crt", "server.key", nil)
+	https := &http.Server{
+		Addr: ":" + params["https"],
+	}
+	if _, ok := params["tlsAuth"]; ok {
+		https.TLSConfig = &tls.Config{
+			//ClientCAs: caCertPool,
+			ClientAuth: tls.RequireAnyClientCert,
+		}
+	}
+	err = https.ListenAndServeTLS("server.crt", "server.key")
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
