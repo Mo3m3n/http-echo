@@ -42,18 +42,24 @@ func EchoHandler(writer http.ResponseWriter, request *http.Request) {
 }
 
 func main() {
-
 	params := getParams()
 	http.HandleFunc("/", EchoHandler)
 	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", params["http"], params["https"])
 	// HTTP
-	go func() {
-		err := http.ListenAndServe(":"+params["http"], nil)
-		if err != nil {
-			log.Fatal("Echo server (HTTP): ", err)
-		}
-	}()
+	err := http.ListenAndServe(":"+params["http"], nil)
+	if err != nil {
+		log.Fatal("Echo server (HTTP): ", err)
+	}
 	//HTTPS
+	go func() {
+		listenAndServeHTTPS(params)
+	}()
+}
+
+func listenAndServeHTTPS(params map[string]string) {
+	if https := params["https"]; https == "0" {
+		return
+	}
 	cmd := exec.Command("./generate-cert.sh")
 	err := cmd.Run()
 	if err != nil {
@@ -80,4 +86,5 @@ func main() {
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
 	}
+
 }
