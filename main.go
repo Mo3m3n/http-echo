@@ -82,19 +82,7 @@ func EchoHandler(writer http.ResponseWriter, request *http.Request) {
 	fmt.Fprintln(writer, string(res))
 }
 
-func main() {
-
-	http.HandleFunc("/", EchoHandler)
-	ports := getServerPorts()
-	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", ports[0], ports[1])
-	// HTTP
-	go func() {
-		err := http.ListenAndServe(":"+ports[0], nil)
-		if err != nil {
-			log.Fatal("Echo server (HTTP): ", err)
-		}
-	}()
-	//HTTPS
+func listenAndServceTLS(port string) {
 	cmd := exec.Command("./generate-cert.sh")
 	err := cmd.Run()
 	if err != nil {
@@ -108,8 +96,24 @@ func main() {
 	if os.IsNotExist(err) {
 		log.Fatal("server.key: ", err)
 	}
-	err = http.ListenAndServeTLS(":"+ports[1], "server.crt", "server.key", nil)
+	err = http.ListenAndServeTLS(":"+port, "server.crt", "server.key", nil)
 	if err != nil {
 		log.Fatal("ListenAndServe: ", err)
+	}
+}
+
+func main() {
+
+	http.HandleFunc("/", EchoHandler)
+	ports := getServerPorts()
+	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", ports[0], ports[1])
+	// HTTPS
+	go func() {
+		listenAndServceTLS(ports[1])
+	}()
+	// HTTP
+	err := http.ListenAndServe(":"+ports[0], nil)
+	if err != nil {
+		log.Fatal("Echo server (HTTP): ", err)
 	}
 }
