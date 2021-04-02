@@ -4,29 +4,28 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 )
 
 // DefaultPort is the default port to use if once is not specified by the SERVER_PORT environment variable
-const HTTPPort = "8888"
-const HTTPSPort = "8443"
+const HTTPPort = 8888
+const HTTPSPort = 8443
 
-func getServerPorts() (ports [2]string) {
-	ports[0] = os.Getenv("HTTP_PORT")
-	ports[1] = os.Getenv("HTTPS_PORT")
-	if ports[0] == "" {
-		ports[0] = HTTPPort
-	}
-	if ports[1] == "" {
-		ports[1] = HTTPSPort
-	}
-
-	return ports
+func getParams() map[string]string {
+	params := make(map[string]string)
+	httpPtr := flag.Int("http", HTTPPort, "http port value")
+	httpsPtr := flag.Int("https", HTTPSPort, "https port value")
+	flag.Parse()
+	params["http"] = strconv.Itoa(*httpPtr)
+	params["https"] = strconv.Itoa(*httpsPtr)
+	return params
 }
 
 // EchoHandler echos back the request as a response
@@ -113,15 +112,15 @@ func listenAndServceTLS(port string) {
 
 func main() {
 
+	params := getParams()
 	http.HandleFunc("/", EchoHandler)
-	ports := getServerPorts()
-	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", ports[0], ports[1])
+	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", params["http"], params["https"])
 	// HTTPS
 	go func() {
-		listenAndServceTLS(ports[1])
+		listenAndServceTLS(params["https"])
 	}()
 	// HTTP
-	err := http.ListenAndServe(":"+ports[0], nil)
+	err := http.ListenAndServe(":"+params["http"], nil)
 	if err != nil {
 		log.Fatal("Echo server (HTTP): ", err)
 	}

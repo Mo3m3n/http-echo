@@ -13,8 +13,6 @@ COPY --from=builder /src/echo-http .
 
 COPY generate-cert.sh .
 
-ENV HTTP_PORT=80 HTTPS_PORT=443
-
 RUN apk --no-cache add openssl
 
 ENTRYPOINT ["./echo-http"]
