@@ -31,14 +31,21 @@ func getServerPorts() (ports [2]string) {
 
 // EchoHandler echos back the request as a response
 func EchoHandler(writer http.ResponseWriter, request *http.Request) {
-
 	log.Println("Echoing back request made to " + request.URL.Path + " to client (" + request.RemoteAddr + ")")
+	var attr map[string]interface{}
 
 	name, err := os.Hostname()
 	if err != nil {
 		log.Println(err)
 	}
-	attr := make(map[string]interface{})
+
+	if request.URL.Path == "/hostname" {
+		writer.Header().Set("Content-Type", "text/plain")
+		fmt.Fprintln(writer, name)
+		return
+	}
+
+	attr = make(map[string]interface{})
 	attr["os"] = map[string]string{
 		"hostname": name,
 	}
@@ -60,7 +67,9 @@ func EchoHandler(writer http.ResponseWriter, request *http.Request) {
 	headers := make(map[string]string)
 	var cookies []string
 	var buf bytes.Buffer
-	request.Write(&buf)
+	if err = request.Write(&buf); err != nil {
+		log.Printf("Error: %s", err)
+	}
 	for name, value := range request.Header {
 		headers[name] = strings.Join(value, " ")
 	}
