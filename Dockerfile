@@ -1,6 +1,6 @@
 FROM golang:1.14.2-alpine AS builder
 
-COPY main.go /src/
+COPY *.go /src/
 
 RUN cd /src && go build -o echo-http
 
