@@ -22,9 +22,11 @@ func (c *context) getParams() {
 	c.params = make(map[string]string)
 	httpPtr := flag.Int("http", HTTPPort, "http port value")
 	httpsPtr := flag.Int("https", HTTPSPort, "https port value")
+	defaultRsp := flag.String("default-response", "all", "what should default response include. Values can be: all, hostname")
 	flag.Parse()
 	c.params["http"] = strconv.Itoa(*httpPtr)
 	c.params["https"] = strconv.Itoa(*httpsPtr)
+	c.params["response"] = *defaultRsp
 }
 
 func listenAndServceTLS(port string) {
@@ -55,8 +57,14 @@ func main() {
 		log.Println(err)
 	}
 	ctx.getParams()
-	http.HandleFunc("/", ctx.echoAll)
 	http.HandleFunc("/hostname", ctx.echoHostname)
+	http.HandleFunc("/all", ctx.echoAll)
+	switch ctx.params["response"] {
+	case "hostname":
+		http.HandleFunc("/", ctx.echoHostname)
+	default:
+		http.HandleFunc("/", ctx.echoAll)
+	}
 	log.Printf("starting echo server, listening on ports HTTP:%s/HTTPS:%s", ctx.params["http"], ctx.params["https"])
 	// HTTPS
 	go func() {
