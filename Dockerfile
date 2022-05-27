@@ -1,6 +1,6 @@
-FROM golang:1.14.2-alpine AS builder
+FROM golang:1.17-alpine AS builder
 
-COPY *.go /src/
+COPY . /src/
 
 RUN cd /src && go build -o echo-http
 
