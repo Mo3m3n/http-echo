@@ -5,8 +5,24 @@ By default the certificate CN is the hostname of the machine where the program i
 
 ## How to use
 
-    docker run -p 8888:80 -p 8443:443 --rm -t mo3m3n/http-echo
+    docker run -p 80:8888 -p 443:8443 --rm -t mo3m3n/http-echo
 
+## Params
+
+```
+> http-echo --help
+Usage of ./http-echo:                                        
+  -http int
+    	http port value (default 8888)
+  -https int
+    	https port value (default 8443)
+```
+
+## Endpoints
+
+- `/`: sends back the full request
+- `/hostname`:  sends back the hostname where http-echo is running
+ 
 ## Output example
 
 ```bash
