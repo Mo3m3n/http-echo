@@ -46,6 +46,9 @@ func (c context) echoAll(writer http.ResponseWriter, request *http.Request) {
 		log.Printf("Error reading request: %s", err)
 		return
 	}
+	if c.verbose {
+		log.Printf("Content:\n%s", buf.String())
+	}
 	for name, value := range request.Header {
 		headers[name] = strings.Join(value, " ")
 	}

@@ -16,15 +16,18 @@ const HTTPSPort = 8443
 type context struct {
 	httpPort  int
 	httpsPort int
+	verbose   bool
 	hostname  string
 }
 
 func (c *context) getParams() {
 	httpPtr := flag.Int("http", HTTPPort, "http port value")
 	httpsPtr := flag.Int("https", HTTPSPort, "https port value")
+	verbose := flag.Bool("v", false, "verbose logging")
 	flag.Parse()
 	c.httpPort = *httpPtr
 	c.httpsPort = *httpsPtr
+	c.verbose = *verbose
 }
 
 func listenAndServceTLS(port string) {
