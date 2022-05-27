@@ -11,20 +11,20 @@ import (
 )
 
 func (c context) echoHostname(writer http.ResponseWriter, request *http.Request) {
+	log.Printf("%s: %s %s", request.RemoteAddr, request.Method, request.URL)
 	writer.Header().Set("Content-Type", "text/plain")
 	fmt.Fprintln(writer, c.hostname)
 }
 
 //  echoAll echos back request in response
 func (c context) echoAll(writer http.ResponseWriter, request *http.Request) {
-	log.Println("Echoing back request made to " + request.URL.Path + " to client (" + request.RemoteAddr + ")")
+	log.Printf("%s: %s %s", request.RemoteAddr, request.Method, request.URL)
 	attr := make(map[string]interface{})
 
 	// OS
 	attr["os"] = map[string]string{
 		"hostname": c.hostname,
 	}
-	log.Println(request.RemoteAddr)
 	// TCP
 	parts := strings.Split(request.RemoteAddr, ":")
 	attr["tcp"] = map[string]string{
